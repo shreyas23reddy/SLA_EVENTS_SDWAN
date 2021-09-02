@@ -1,0 +1,21 @@
+
+# vManage Connectivity Info
+vmanage_host: 10.0.101.111
+vmanage_port: 10101
+vmanage_username: auto
+vmanage_password: Auto12345
+mean_loss_threshold: 3
+mean_latency_thresold: 80
+mean_jitter_thresold: 80
+
+#Time delta in minutes 
+time_delta: 5
+
+sender_email: abcd@gmail.com
+receiver_email: [xyz@gmail.com]
+mail_password: abcdefg
+
+
+hub_routers: 
+  - system_ip: 10.10.1.11
+  - system_ip: 20.20.20.1
