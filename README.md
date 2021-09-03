@@ -42,4 +42,4 @@ pip3 install -r requirements.txt
 
 
 
-USE events_sla.py to run the code 
+USE events_SLA.py to run the code 
