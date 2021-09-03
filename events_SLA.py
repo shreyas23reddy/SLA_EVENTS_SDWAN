@@ -1,4 +1,3 @@
-
 """
 import all the reqiured librariers
 """
@@ -79,90 +78,95 @@ def send_email(sender_email, mail_passwd, receiver_email, body):
 
 
 if __name__=='__main__':
-    
 
-    """ open the yaml file where the constant data is stored"""
+    while True:
 
-    with open("vmanage_login.yaml") as f:
-        config = yaml.safe_load(f.read())
-    
-    
-    """ extracting info from Yaml file"""
+        """ open the yaml file where the constant data is stored"""
 
-    vmanage_host = config['vmanage_host']
-    vmanage_port = config['vmanage_port']
-    username = config['vmanage_username']
-    password = config['vmanage_password']
+        with open("vmanage_login.yaml") as f:
+            config = yaml.safe_load(f.read())
+        
+        
+        """ extracting info from Yaml file"""
 
-    time_delta = config['time_delta']
+        vmanage_host = config['vmanage_host']
+        vmanage_port = config['vmanage_port']
+        username = config['vmanage_username']
+        password = config['vmanage_password']
 
-
-    """ get current time and data and use time_delta to subract the time by delta minutes """
-    date_time = datetime.utcnow()
-    end_time = date_time.strftime("%Y-%m-%dT%H:%M:%S UTC")
-    delta = date_time - timedelta( minutes = time_delta)
-    start_time = delta.strftime("%Y-%m-%dT%H:%M:%S UTC")
+        time_delta = config['time_delta']
 
 
-    """ Creted dataset"""
-    sla_event_dataset = {"event-time":[],"host-name":[],"local-system-ip":[], "remote-system-ip":[], "local-color":[], "remote-color":[], "src-ip":[], "dst-ip":[], "src-port":[], "dst-port":[], "sla-classes":[], "old-sla-classes":[]}
+        """ get current time and data and use time_delta to subract the time by delta minutes """
+        date_time = datetime.utcnow()
+        end_time = date_time.strftime("%Y-%m-%dT%H:%M:%S UTC")
+        delta = date_time - timedelta( minutes = time_delta)
+        start_time = delta.strftime("%Y-%m-%dT%H:%M:%S UTC")
 
 
-   
-    """  Calling the header function from Auth to get 
-              'Content-Type': "application/json", 
-             'Accept': '*/*', 'Cookie': session_id, 
-             'X-XSRF-TOKEN': token_id}  """
-    
-    header = auth.get_header(vmanage_host, vmanage_port,username, password)
+        """ Creted dataset"""
+        sla_event_dataset = {"event-time":[],"host-name":[],"local-system-ip":[], "remote-system-ip":[], "local-color":[], "remote-color":[], "src-ip":[], "dst-ip":[], "src-port":[], "dst-port":[], "sla-classes":[], "old-sla-classes":[]}
 
-
-
-    """ Creating the request payload 
-        since nested dict is not execpt in requests we used a str """
-    data= '{\"query\":{\"condition\":\"AND\",\"rules\":[{\"value\":[\"'+start_time+'\",\"'+end_time+'\"],\"field\":\"entry_time\",\"type\":\"date\",\"operator\":\"between\"}]}}'
-
-
-
-    """ Caling the API ('/dataservice/event') call with POST request """
-    event_data = post_events(header, data)
 
     
-    """ parsing the returned data """
-    for sla_event_data in event_data:
-        if sla_event_data['eventname'] == 'sla-change':
-
-            sla_event_details = re.split('\=|;',sla_event_data['details'])
-
-
-            sla_event_dataset["event-time"].append(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(sla_event_data['entry_time']//1000)))
-            sla_event_dataset["host-name"].append(sla_event_details[1])
-            sla_event_dataset["local-system-ip"].append(sla_event_details[13])
-            sla_event_dataset["remote-system-ip"].append(sla_event_details[17])
-            sla_event_dataset["local-color"].append(sla_event_details[15])
-            sla_event_dataset["remote-color"].append(sla_event_details[19])
-            sla_event_dataset["src-ip"].append(sla_event_details[3])
-            sla_event_dataset["dst-ip"].append(sla_event_details[5])
-            sla_event_dataset["src-port"].append(sla_event_details[9])
-            sla_event_dataset["dst-port"].append(sla_event_details[11])
-            sla_event_dataset["sla-classes"].append(sla_event_details[21])
-            sla_event_dataset["old-sla-classes"].append(sla_event_details[23])
-
-            print(sla_event_data)
-    
-    """ Converting Dataset to Dataframe using pandas"""
-    sla_event_dataframe = pd.DataFrame(sla_event_dataset)
+        """  Calling the header function from Auth to get 
+                'Content-Type': "application/json", 
+                'Accept': '*/*', 'Cookie': session_id, 
+                'X-XSRF-TOKEN': token_id}  """
+        
+        header = auth.get_header(vmanage_host, vmanage_port,username, password)
 
 
-    """ Convert pandas dataframe to HTML table """
-    """ https://pypi.org/project/pretty-html-table/ """
-    body = build_table(sla_event_dataframe, 'red_dark')
-    
 
-    """ extracting info from Yaml file"""
-    sender_email = config['sender_email']
-    receiver_email = config['receiver_email']
-    mail_password = config['mail_password']
+        """ Creating the request payload 
+            since nested dict is not execpt in requests we used a str """
+        data= '{\"query\":{\"condition\":\"AND\",\"rules\":[{\"value\":[\"'+start_time+'\",\"'+end_time+'\"],\"field\":\"entry_time\",\"type\":\"date\",\"operator\":\"between\"}]}}'
 
-    """ call send_email """
-    print(send_email(sender_email, mail_password, receiver_email, body))
+
+
+        """ Caling the API ('/dataservice/event') call with POST request """
+        event_data = post_events(header, data)
+
+        sla_list_count= 0
+
+        
+        """ parsing the returned data """
+        for sla_event_data in event_data:
+            if sla_event_data['eventname'] == 'sla-change':
+                sla_list_count += 1
+                sla_event_details = re.split('\=|;',sla_event_data['details'])
+
+
+                sla_event_dataset["event-time"].append(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(sla_event_data['entry_time']//1000)))
+                sla_event_dataset["host-name"].append(sla_event_details[1])
+                sla_event_dataset["local-system-ip"].append(sla_event_details[13])
+                sla_event_dataset["remote-system-ip"].append(sla_event_details[17])
+                sla_event_dataset["local-color"].append(sla_event_details[15])
+                sla_event_dataset["remote-color"].append(sla_event_details[19])
+                sla_event_dataset["src-ip"].append(sla_event_details[3])
+                sla_event_dataset["dst-ip"].append(sla_event_details[5])
+                sla_event_dataset["src-port"].append(sla_event_details[9])
+                sla_event_dataset["dst-port"].append(sla_event_details[11])
+                sla_event_dataset["sla-classes"].append(sla_event_details[21])
+                sla_event_dataset["old-sla-classes"].append(sla_event_details[23])
+
+        
+        """ Converting Dataset to Dataframe using pandas"""
+        sla_event_dataframe = pd.DataFrame(sla_event_dataset)
+
+
+        """ Convert pandas dataframe to HTML table """
+        """ https://pypi.org/project/pretty-html-table/ """
+        body = build_table(sla_event_dataframe, 'red_dark')
+        
+
+        """ extracting info from Yaml file"""
+        sender_email = config['sender_email']
+        receiver_email = config['receiver_email']
+        mail_password = config['mail_password']
+
+        """ call send_email """
+        if sla_list_count >= 1:
+            print(send_email(sender_email, mail_password, receiver_email, body))
+
+        time.sleep(180)
